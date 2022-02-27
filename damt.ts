@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --quiet --allow-read
+#!/usr/bin/env -S deno run --quiet --allow-read --allow-env
 /**
  * @file damt.ts
  * @brief Manage acronyms stored in a SQLite database.
@@ -18,16 +18,44 @@
  * @note The program can be installed to 'DENO_INSTALL_ROOT' to using the command:
  * @code deno install -f --quiet --allow-read damt.ts
  */
- 
- 
- //--------------------------------
+
+//--------------------------------
 // MODULE IMPORTS
 //--------------------------------
-import {cliVersion} from "https://deno.land/x/deno_mod@0.7.4/mod.ts";
+import {
+  cliVersion,
+  existsFile,
+  getFileModTime,
+} from "https://deno.land/x/deno_mod@0.8.1/mod.ts";
+
 import { parse } from "https://deno.land/std@0.127.0/flags/mod.ts";
-import { basename } from "https://deno.land/std@0.127.0/path/mod.ts";
-import { underline, bold, blue } from "https://deno.land/std@0.127.0/fmt/colors.ts";
+import { prettyBytes } from "https://deno.land/std@0.127.0/fmt/bytes.ts";
+import {
+  basename,
+  dirname,
+  fromFileUrl,
+  join,
+  normalize,
+} from "https://deno.land/std@0.127.0/path/mod.ts";
+import {
+  blue,
+  bold,
+  underline,
+} from "https://deno.land/std@0.127.0/fmt/colors.ts";
+
 import { DB } from "https://deno.land/x/sqlite@v3.2.1/mod.ts";
+
+//--------------------------------
+// DATABASE INTERFACE
+//--------------------------------
+
+interface DamtInterface {
+  dbFileName?: string;
+  dbFullPath?: string;
+  dbSize?: string;
+  dbLastAccess?: string;
+  dbSqliteVersion?: string;
+}
 
 //--------------------------------
 // COMMAND LINE ARGS FUNCTIONS
@@ -35,7 +63,7 @@ import { DB } from "https://deno.land/x/sqlite@v3.2.1/mod.ts";
 
 /** Define the command line argument switches and options to be used */
 const cliOpts = {
-  default: { h: false, s:false, v: false },
+  default: { h: false, s: false, v: false },
   alias: { h: "help", s: "search", v: "version" },
   stopEarly: true,
   unknown: showUnknown,
@@ -43,7 +71,7 @@ const cliOpts = {
 
 /** define options for `cliVersion()` function for application version data */
 const versionOptions = {
-  version: "0.1.0",
+  version: "0.2.0",
   copyrightName: "Simon Rowe",
   licenseUrl: "https://github.com/wiremoons/damt/",
   crYear: "2022",
@@ -81,25 +109,6 @@ function showUnknown(arg: string) {
   Deno.exit(1);
 }
 
-//--------------------------------
-// APPLICATION FUNCTIONS
-//--------------------------------
-
-/** Return the name of the currently running program without the path included. */
-function getAppName(): string {
-  return `${basename(Deno.mainModule) ?? "UNKNOWN"}`;
-}
-
-function dbSetup() {
-
-}
-
-
-function dbSearch(){
-  console.log(`${underline("Search function called\n")}`);
-}
-
-
 /** Display when help when unknown command lines options are entered or is requested by the user */
 function showHelp() {
   console.log(`
@@ -114,7 +123,78 @@ Usage: ${bold(getAppName())} [switches] [arguments]
 `);
 }
 
+//--------------------------------
+// UTILITY FUNCTIONS
+//--------------------------------
 
+/** Obtain `filePath` file size */
+async function getFileSize(filePath: string): Promise<number | undefined> {
+  // check for URL path instead of OS path
+  if (filePath.startsWith("file:")) {
+    filePath = fromFileUrl(filePath);
+  }
+  // get file stat and extract size value
+  try {
+    const fileInfo = await Deno.lstat(filePath);
+    if (fileInfo.isFile) {
+      return fileInfo.size;
+    }
+  } catch {
+    return undefined;
+  }
+}
+
+//--------------------------------
+// APPLICATION FUNCTIONS
+//--------------------------------
+
+/** Return the name of the currently running program without the path included. */
+function getAppName(): string {
+  return `${basename(Deno.mainModule) ?? "UNKNOWN"}`;
+}
+
+/** Check executable location for valid database file named: 'acronyms.db'  */
+async function getLocalDBFile(): Promise<string | undefined> {
+  const appDB = join(normalize(dirname(Deno.mainModule)), "acronyms.db");
+  console.log(`Constructed filename: ${appDB}`);
+  return await existsFile(appDB) ? appDB : undefined;
+}
+
+/** Check environment variable 'ACRODB' for a valid filename */
+async function getDBEnv(): Promise<string | undefined> {
+  const dbFile = Deno.env.get("ACRODB") || "";
+  return await existsFile(dbFile) ? dbFile : undefined;
+}
+
+//** Populate the field in the 'DamtInterface' with the database information */
+async function setDbData(): Promise<DamtInterface> {
+  // check environment first and fallback to executable directory looking DB file location
+  const dbLocation = await getDBEnv() || await getLocalDBFile();
+  if (!dbLocation) {
+    return Promise.reject(
+      new Error("failed to locate a valid database filename."),
+    );
+  }
+
+  const prettyDBSze = await getFileSize(dbLocation).then((size) =>
+    size ? prettyBytes(size) : "UNKNOWN"
+  );
+
+  return {
+    dbFileName: basename(dbLocation),
+    dbFullPath: normalize(dbLocation),
+    dbSize: prettyDBSze,
+    dbLastAccess: await getFileModTime(dbLocation),
+  };
+}
+
+//--------------------------------
+// Database SQL Functions
+//--------------------------------
+
+function dbSearch() {
+  console.log(`${underline("Search function called\n")}`);
+}
 
 //--------------------------------
 // MAIN
@@ -124,11 +204,10 @@ if (import.meta.main) {
 
   if (Deno.args.length > 0) await getCliArgs();
 
+  //const dbData = {} as DamtInterface;
+  const dbData: DamtInterface | void = await setDbData().catch((e) =>
+    console.error(`Exit as database file not found:\n${e}`)
+  );
 
-
+  console.table(dbData);
 }
-
-
-
-
-
