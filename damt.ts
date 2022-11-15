@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --quiet --allow-read --allow-env
+#!/usr/bin/env -S deno run --quiet --allow-read --allow-env=ACRODB
 /**
  * @file damt.ts
  * @brief Manage acronyms stored in a SQLite database.
@@ -200,7 +200,7 @@ function dbSearch() {
 // MAIN
 //--------------------------------
 if (import.meta.main) {
-  console.log(`${blue(getAppName())} is running...`);
+  console.log(`\n${blue(getAppName())} is running...`);
 
   if (Deno.args.length > 0) await getCliArgs();
 
