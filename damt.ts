@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --quiet --allow-read --allow-env=ACRODB
+#!/usr/bin/env -S deno run --quiet --allow-read --allow-env=ACRODB --allow-write
 /**
  * @file damt.ts
  * @brief Manage acronyms stored in a SQLite database.
@@ -8,7 +8,7 @@
  * @source     https://github.com/wiremoons/damt
  *
  * @date originally created: 25 Feb 2022
- * @date updated significantly: tbc
+ * @date updated significantly: November 2022.
  *
  * @details Program is used to manage acronyms stored in a SQLite database.
  * Application is written in TypeScript for use with the Deno runtime: https://deno.land/
@@ -26,6 +26,7 @@ import {
   cliVersion,
   existsFile,
   getFileModTime,
+  isString,
 } from "https://deno.land/x/deno_mod@0.8.1/mod.ts";
 
 import { parse } from "https://deno.land/std@0.127.0/flags/mod.ts";
@@ -43,15 +44,15 @@ import {
   underline,
 } from "https://deno.land/std@0.127.0/fmt/colors.ts";
 
-import { DB } from "https://deno.land/x/sqlite@v3.2.1/mod.ts";
+import { DB } from "https://deno.land/x/sqlite@v3.7.0/mod.ts";
 
 //--------------------------------
 // DATABASE INTERFACE
 //--------------------------------
 
 interface DamtInterface {
-  dbFileName?: string;
-  dbFullPath?: string;
+  dbFileName: string;
+  dbFullPath: string;
   dbSize?: string;
   dbLastAccess?: string;
   dbSqliteVersion?: string;
@@ -71,7 +72,7 @@ const cliOpts = {
 
 /** define options for `cliVersion()` function for application version data */
 const versionOptions = {
-  version: "0.2.0",
+  version: "0.2.1",
   copyrightName: "Simon Rowe",
   licenseUrl: "https://github.com/wiremoons/damt/",
   crYear: "2022",
@@ -144,6 +145,14 @@ async function getFileSize(filePath: string): Promise<number | undefined> {
   }
 }
 
+/**
+ * Type Guard for DamtInterface interface object
+ */
+// deno-lint-ignore no-explicit-any
+function isObject(arg: any): arg is DamtInterface {
+  return arg !== undefined;
+}
+
 //--------------------------------
 // APPLICATION FUNCTIONS
 //--------------------------------
@@ -188,6 +197,13 @@ async function setDbData(): Promise<DamtInterface> {
   };
 }
 
+//** Open the database file and return the handle to it
+function openDB(dbData: DamtInterface): DB | undefined {
+  if ((isObject(dbData)) && (isString(dbData.dbFullPath))) {
+    return new DB(dbData.dbFullPath);
+  }
+}
+
 //--------------------------------
 // Database SQL Functions
 //--------------------------------
@@ -195,6 +211,34 @@ async function setDbData(): Promise<DamtInterface> {
 function dbSearch() {
   console.log(`${underline("Search function called\n")}`);
 }
+
+//** Obtain the total number of acronym records in the database
+function recordCount(db: DB): string {
+  return (db)
+    ? (db.query("select count(*) from acronyms;")).toLocaleString()
+    : "ERROR";
+}
+
+//** Obtain the SQLite version
+function sqliteVersion(db: DB): string {
+  return (db) ? (db.query("select sqlite_version();")).toString() : "ERROR";
+}
+
+//** Obtain the last acronym (ie newest) entered into the database
+function lastAcronym(db: DB): string {
+  return (db)
+    ? (db.query("select acronym from acronyms order by rowid desc limit 1;"))
+      .toString()
+    : "ERROR";
+}
+
+// sqlite3_prepare_v2(amtdb->db,
+//     "select rowid,ifnull(Acronym,''), "
+// "ifnull(Definition,''), "
+// "ifnull(Source,''), "
+// "ifnull(Description,'') "
+// "from ACRONYMS "
+// "Order by rowid DESC LIMIT 5;",
 
 //--------------------------------
 // MAIN
@@ -205,9 +249,35 @@ if (import.meta.main) {
   if (Deno.args.length > 0) await getCliArgs();
 
   //const dbData = {} as DamtInterface;
-  const dbData: DamtInterface | void = await setDbData().catch((e) =>
+  const dbData = await setDbData().catch((e) =>
     console.error(`Exit as database file not found:\n${e}`)
   );
 
-  console.table(dbData);
+  if (isObject(dbData)) {
+    console.table(dbData);
+    const db = openDB(dbData);
+
+    if (db) {
+      // Print out data in table
+      for (
+        const [Acronym, Definition] of db.query(
+          "SELECT Acronym,Definition FROM ACRONYMS limit 5",
+        )
+      ) {
+        console.log(`'${Acronym}' is: '${Definition}'`);
+      }
+      console.log(
+        `SQLite version is: ${sqliteVersion(db)}`,
+      );
+      console.log(
+        `Total acronyms: ${recordCount(db)}`,
+      );
+      console.log(
+        `Newest acronyms: '${lastAcronym(db)}'`,
+      );
+
+      // close the database
+      db.close();
+    }
+  }
 }
