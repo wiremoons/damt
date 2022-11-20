@@ -252,7 +252,7 @@ function dbSearch(searchItem: string, db: DB, dbData: DamtInterface) {
         .iter([searchItem])
     ) {
       console.log(`
-ID: ${rowid}
+ID:          ${rowid}
 ACRONYM:     '${acronym}' is: '${definition}'.
 SOURCE:      '${source}'
 DESCRIPTION: ${description}`);
