@@ -38,6 +38,7 @@ import {
   join,
   normalize,
 } from "https://deno.land/std@0.127.0/path/mod.ts";
+
 import {
   blue,
   bold,
@@ -47,8 +48,10 @@ import {
 import { DB } from "https://deno.land/x/sqlite@v3.7.0/mod.ts";
 
 //--------------------------------
-// DATABASE INTERFACE
+// GLOBAL DECLARATIONS
 //--------------------------------
+
+// DATABASE INTERFACE DECLARATION
 
 interface DamtInterface {
   dbFileName: string;
@@ -56,19 +59,11 @@ interface DamtInterface {
   dbSize?: string;
   dbLastAccess?: string;
   dbSqliteVersion?: string;
+  dbRecordCount?: string;
+  dbNewestAcronym?: string;
 }
 
-//--------------------------------
-// COMMAND LINE ARGS FUNCTIONS
-//--------------------------------
-
-/** Define the command line argument switches and options to be used */
-const cliOpts = {
-  default: { h: false, s: false, v: false },
-  alias: { h: "help", s: "search", v: "version" },
-  stopEarly: true,
-  unknown: showUnknown,
-};
+// CLI VERSION OPTIONS DECLARATION
 
 /** define options for `cliVersion()` function for application version data */
 const versionOptions = {
@@ -78,24 +73,35 @@ const versionOptions = {
   crYear: "2022",
 };
 
+/** Define the command line argument switches and options to be used */
+const cliOpts = {
+  default: { h: false, s: false, v: false },
+  alias: { h: "help", s: "search", v: "version" },
+  stopEarly: true,
+  //unknown: showUnknown,
+};
+
+//--------------------------------
+// COMMAND LINE ARGS FUNCTIONS
+//--------------------------------
+
 /** obtain any command line arguments and exec them as needed */
-async function getCliArgs() {
+async function execCliArgs(db: DB, dbData: DamtInterface) {
   //console.log(parse(Deno.args,cliOpts));
   const cliArgs = parse(Deno.args, cliOpts);
 
   if (cliArgs.search) {
-    dbSearch();
+    dbSearch(Deno.args[1], db, dbData);
     Deno.exit(0);
   }
 
   if (cliArgs.help) {
-    showHelp();
+    printHelp();
     Deno.exit(0);
   }
 
   if (cliArgs.version) {
-    const versionData = await cliVersion(versionOptions);
-    console.log(versionData);
+    await printVersionInfo();
     Deno.exit(0);
   }
 }
@@ -104,25 +110,11 @@ async function getCliArgs() {
  * command line option is given by the user.
  * @code showUnknown(arg: string, k?: string, v?: unknown)
  */
-function showUnknown(arg: string) {
-  console.error(`\nERROR: Unknown argument: '${arg}'`);
-  showHelp();
-  Deno.exit(1);
-}
-
-/** Display when help when unknown command lines options are entered or is requested by the user */
-function showHelp() {
-  console.log(`
-Managed acronyms stored in a SQLIte database.
-
-Usage: ${bold(getAppName())} [switches] [arguments]
-
-[Switches]       [Arguments]   [Default Value]   [Description]
--s, --search     acronym            false        acronym to search the database for
--h, --help                          false        display help information
--v, --version                       false        display program version
-`);
-}
+// function showUnknown(arg: string) {
+//   console.error(`\nERROR: Unknown argument: '${arg}'`);
+//   printHelp();
+//   Deno.exit(1);
+// }
 
 //--------------------------------
 // UTILITY FUNCTIONS
@@ -197,7 +189,7 @@ async function setDbData(): Promise<DamtInterface> {
   };
 }
 
-//** Open the database file and return the handle to it
+//** Try to open the database file and return the handle to it
 function openDB(dbData: DamtInterface): DB | undefined {
   if ((isObject(dbData)) && (isString(dbData.dbFullPath))) {
     return new DB(dbData.dbFullPath);
@@ -205,11 +197,72 @@ function openDB(dbData: DamtInterface): DB | undefined {
 }
 
 //--------------------------------
+// DISPLAY INFO FUNCTIONS
+//--------------------------------
+
+/** Display application version information when requested */
+async function printVersionInfo() {
+  const versionData = await cliVersion(versionOptions);
+  console.log(versionData);
+}
+
+/** Display database data collected when requested */
+function printDbInfo(dbData: DamtInterface) {
+  console.log(`
+Database file:      '${dbData.dbFullPath}'
+Database size:      '${dbData.dbSize}'
+Database modified:  '${dbData.dbLastAccess}'
+
+SQLite version:     '${dbData.dbSqliteVersion}'
+Total acronyms:     '${dbData.dbRecordCount}'
+Newest acronyms:    '${dbData.dbNewestAcronym}'
+`);
+}
+
+/** Display application help when requested  */
+function printHelp() {
+  console.log(`
+Managed acronyms stored in a SQLIte database.
+
+Usage: ${bold(getAppName())} [switches] [arguments]
+
+[Switches]       [Arguments]   [Default Value]   [Description]
+-s, --search     acronym            false        acronym to search the database for
+-h, --help                          false        display help information
+-v, --version                       false        display program version
+`);
+}
+
+//--------------------------------
 // Database SQL Functions
 //--------------------------------
 
-function dbSearch() {
-  console.log(`${underline("Search function called\n")}`);
+function dbSearch(searchItem: string, db: DB, dbData: DamtInterface) {
+  if (isString(searchItem)) {
+    const searchQuery = db.prepareQuery<
+      [string, string, string, string, string]
+    >(
+      "select rowid,ifnull(Acronym,''),ifnull(Definition,''),ifnull(Source,''),ifnull(Description,'') from ACRONYMS where Acronym like ? collate nocase order by Source;",
+    );
+
+    let resultCount = 0;
+    // output any search results
+    for (
+      const [rowid, acronym, definition, source, description] of searchQuery
+        .iter([searchItem])
+    ) {
+      console.log(`
+ID: ${rowid}
+ACRONYM:     '${acronym}' is: '${definition}'.
+SOURCE:      '${source}'
+DESCRIPTION: ${description}`);
+      resultCount++;
+    }
+    console.log(
+      `\nSearch of '${dbData.dbRecordCount}' records for '${searchItem}' found '${resultCount}' matches.`,
+    );
+    searchQuery.finalize();
+  }
 }
 
 //** Obtain the total number of acronym records in the database
@@ -232,6 +285,15 @@ function lastAcronym(db: DB): string {
     : "ERROR";
 }
 
+//** Complete the population of the remaining data values in the DamtInterface
+function dbDataPopulate(db: DB, dbData: DamtInterface) {
+  if (db) {
+    dbData.dbSqliteVersion = sqliteVersion(db);
+    dbData.dbNewestAcronym = lastAcronym(db);
+    dbData.dbRecordCount = recordCount(db);
+  }
+}
+
 // sqlite3_prepare_v2(amtdb->db,
 //     "select rowid,ifnull(Acronym,''), "
 // "ifnull(Definition,''), "
@@ -240,43 +302,43 @@ function lastAcronym(db: DB): string {
 // "from ACRONYMS "
 // "Order by rowid DESC LIMIT 5;",
 
-//--------------------------------
-// MAIN
-//--------------------------------
+//select rowid,ifnull(Acronym,''),ifnull(Definition,''),ifnull(Source,''), ifnull(Description,'') from ACRONYMS Order by rowid DESC LIMIT 5;
+
+//----------------------------------------------------------------
+// MAIN : Deno script execution start
+//----------------------------------------------------------------
+
 if (import.meta.main) {
-  console.log(`\n${blue(getAppName())} is running...`);
-
-  if (Deno.args.length > 0) await getCliArgs();
-
-  //const dbData = {} as DamtInterface;
   const dbData = await setDbData().catch((e) =>
     console.error(`Exit as database file not found:\n${e}`)
   );
-
-  if (isObject(dbData)) {
-    console.table(dbData);
+  if (!isObject(dbData)) {
+    console.error("ERROR creating database data object");
+  } else {
+    //console.table(dbData);
     const db = openDB(dbData);
-
     if (db) {
-      // Print out data in table
-      for (
-        const [Acronym, Definition] of db.query(
-          "SELECT Acronym,Definition FROM ACRONYMS limit 5",
-        )
-      ) {
-        console.log(`'${Acronym}' is: '${Definition}'`);
-      }
-      console.log(
-        `SQLite version is: ${sqliteVersion(db)}`,
-      );
-      console.log(
-        `Total acronyms: ${recordCount(db)}`,
-      );
-      console.log(
-        `Newest acronyms: '${lastAcronym(db)}'`,
-      );
+      dbDataPopulate(db, dbData);
+      //console.table(dbData);
+    }
+    if (db) {
+      dbDataPopulate(db, dbData);
 
-      // close the database
+      // only returns if execCliArgs() did not find options to execute
+      if (Deno.args.length > 0) await execCliArgs(db, dbData);
+
+      // Check if search is needed
+      if (Deno.args.length === 1) {
+        console.log(`Trying search with: '${Deno.args[0]}'`);
+        dbSearch(Deno.args[0], db, dbData);
+      } else {
+        await printVersionInfo();
+        printDbInfo(dbData);
+        printHelp();
+      }
+    }
+    // close the database
+    if (db) {
       db.close();
     }
   }
