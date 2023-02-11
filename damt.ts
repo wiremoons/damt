@@ -22,29 +22,32 @@
 //--------------------------------
 // MODULE IMPORTS
 //--------------------------------
-import {
-  cliVersion,
-  existsFile,
-  getFileModTime,
-  isString,
-} from "https://deno.land/x/deno_mod@0.8.1/mod.ts";
 
-import { parse } from "https://deno.land/std@0.127.0/flags/mod.ts";
-import { prettyBytes } from "https://deno.land/std@0.127.0/fmt/bytes.ts";
+// Deno stdlib imports
+import { toIMF } from "https://deno.land/std@0.166.0/datetime/mod.ts";
+import { parse } from "https://deno.land/std@0.166.0/flags/mod.ts";
+import { format } from "https://deno.land/std@0.166.0/fmt/bytes.ts";
 import {
   basename,
   dirname,
   fromFileUrl,
   join,
   normalize,
-} from "https://deno.land/std@0.127.0/path/mod.ts";
-
+} from "https://deno.land/std@0.166.0/path/mod.ts";
 import {
   blue,
   bold,
   underline,
-} from "https://deno.land/std@0.127.0/fmt/colors.ts";
+} from "https://deno.land/std@0.166.0/fmt/colors.ts";
 
+// Other imports
+import {
+  cliVersion,
+  existsFile,
+  getFileModTime,
+  isNumber,
+  isString,
+} from "https://deno.land/x/deno_mod@0.8.1/mod.ts";
 import { DB } from "https://deno.land/x/sqlite@v3.7.0/mod.ts";
 
 //--------------------------------
@@ -75,8 +78,8 @@ const versionOptions = {
 
 /** Define the command line argument switches and options to be used */
 const cliOpts = {
-  default: { h: false, s: false, v: false },
-  alias: { h: "help", s: "search", v: "version" },
+  default: { h: false, l: false, s: false, v: false },
+  alias: { h: "help", l: "latest", s: "search", v: "version" },
   stopEarly: true,
   //unknown: showUnknown,
 };
@@ -92,6 +95,11 @@ async function execCliArgs(db: DB, dbData: DamtInterface) {
 
   if (cliArgs.search) {
     dbSearch(Deno.args[1], db, dbData);
+    Deno.exit(0);
+  }
+
+  if (cliArgs.latest) {
+    dbLatestRecords(db, dbData);
     Deno.exit(0);
   }
 
@@ -145,6 +153,22 @@ function isObject(arg: any): arg is DamtInterface {
   return arg !== undefined;
 }
 
+/** Convert epoch date to date and time for display in output as a string */
+function getDisplayDateTime(epochTime: number): string {
+  //console.log(`Epoch time for conversion to data and time: ${epochTime}`);
+  let dateUTC: Date;
+  //console.log(`Epoch number: ${epochTime} and kind is: ${typeof epochTime}`);
+  epochTime = (typeof epochTime === "string") ? parseInt(epochTime) : epochTime;
+  if (isNumber(epochTime)) {
+    dateUTC = new Date(epochTime * 1000);
+    //console.log(`Converted date to UTC format: ${dateUTC}`);
+    return toIMF(new Date(dateUTC));
+    //console.log(`Final data and time format: ${toIMF(new Date(dateUTC))}`);
+  } else {
+    return "UNKNOWN";
+  }
+}
+
 //--------------------------------
 // APPLICATION FUNCTIONS
 //--------------------------------
@@ -178,7 +202,7 @@ async function setDbData(): Promise<DamtInterface> {
   }
 
   const prettyDBSze = await getFileSize(dbLocation).then((size) =>
-    size ? prettyBytes(size) : "UNKNOWN"
+    size ? format(size) : "UNKNOWN"
   );
 
   return {
@@ -227,6 +251,7 @@ Managed acronyms stored in a SQLIte database.
 Usage: ${bold(getAppName())} [switches] [arguments]
 
 [Switches]       [Arguments]   [Default Value]   [Description]
+-l, --latest                        false        show the five newest acronyms records
 -s, --search     acronym            false        acronym to search the database for
 -h, --help                          false        display help information
 -v, --version                       false        display program version
@@ -237,24 +262,27 @@ Usage: ${bold(getAppName())} [switches] [arguments]
 // Database SQL Functions
 //--------------------------------
 
+//** Search for the given string in the acronym field and display any matching results
 function dbSearch(searchItem: string, db: DB, dbData: DamtInterface) {
   if (isString(searchItem)) {
     const searchQuery = db.prepareQuery<
-      [string, string, string, string, string]
+      [string, string, string, string, string, number]
     >(
-      "select rowid,ifnull(Acronym,''),ifnull(Definition,''),ifnull(Source,''),ifnull(Description,'') from ACRONYMS where Acronym like ? collate nocase order by Source;",
+      "select rowid,ifnull(Acronym,''),ifnull(Definition,''),ifnull(Source,''),ifnull(Description,''),ifnull(Changed,'') from ACRONYMS where Acronym like ? collate nocase order by Source;",
     );
 
     let resultCount = 0;
     // output any search results
     for (
-      const [rowid, acronym, definition, source, description] of searchQuery
-        .iter([searchItem])
+      const [rowid, acronym, definition, source, description, changed]
+        of searchQuery
+          .iter([searchItem])
     ) {
       console.log(`
 ID:          ${rowid}
 ACRONYM:     '${acronym}' is: '${definition}'.
 SOURCE:      '${source}'
+LAST UPDATE: ${getDisplayDateTime(changed)}
 DESCRIPTION: ${description}`);
       resultCount++;
     }
@@ -263,6 +291,34 @@ DESCRIPTION: ${description}`);
     );
     searchQuery.finalize();
   }
+}
+
+//** Show the last five new acronym records entered in the SQLite database
+function dbLatestRecords(db: DB, dbData: DamtInterface) {
+  const latestRecordsQuery = db.prepareQuery<
+    [string, string, string, string, string, number]
+  >(
+    "select rowid,ifnull(Acronym,''),ifnull(Definition,''),ifnull(Source,''),ifnull(Description,''),ifnull(Changed,'') from ACRONYMS Order by rowid DESC LIMIT 5;",
+  );
+
+  let resultCount = 0;
+  // output any search results
+  for (
+    const [rowid, acronym, definition, source, description, changed]
+      of latestRecordsQuery.iter()
+  ) {
+    console.log(`
+ID:          ${rowid}
+ACRONYM:     '${acronym}' is: '${definition}'.
+SOURCE:      '${source}'
+LAST UPDATE: ${getDisplayDateTime(changed)}
+DESCRIPTION: ${description}`);
+    resultCount++;
+  }
+  console.log(
+    `\nShowing latest '5' records of '${dbData.dbRecordCount}' records.`,
+  );
+  latestRecordsQuery.finalize();
 }
 
 //** Obtain the total number of acronym records in the database
@@ -302,7 +358,7 @@ function dbDataPopulate(db: DB, dbData: DamtInterface) {
 // "from ACRONYMS "
 // "Order by rowid DESC LIMIT 5;",
 
-//select rowid,ifnull(Acronym,''),ifnull(Definition,''),ifnull(Source,''), ifnull(Description,'') from ACRONYMS Order by rowid DESC LIMIT 5;
+//select rowid,ifnull(Acronym,''),ifnull(Definition,''),ifnull(Source,''), ifnull(Description,''),ifnull(Changed,'') from ACRONYMS Order by rowid DESC LIMIT 5;
 
 //----------------------------------------------------------------
 // MAIN : Deno script execution start
