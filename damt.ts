@@ -17,6 +17,8 @@
  * @code deno run --quiet --allow-read damt.ts
  * @note The program can be installed to 'DENO_INSTALL_ROOT' to using the command:
  * @code deno install -f --quiet --allow-read damt.ts
+ * @note The program can be compiled using the command:
+ * @code deno compile --quiet --allow-read --allow-env=ACRODB --allow-write damt.ts
  */
 
 //--------------------------------
@@ -48,7 +50,7 @@ import {
   isNumber,
   isString,
 } from "https://deno.land/x/deno_mod@0.8.1/mod.ts";
-import { DB } from "https://deno.land/x/sqlite@v3.7.0/mod.ts";
+import { DB } from "https://deno.land/x/sqlite@v3.7.2/mod.ts";
 
 //--------------------------------
 // GLOBAL DECLARATIONS
