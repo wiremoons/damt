@@ -72,10 +72,10 @@ interface DamtInterface {
 
 /** define options for `cliVersion()` function for application version data */
 const versionOptions = {
-  version: "0.2.1",
+  version: "0.2.2",
   copyrightName: "Simon Rowe",
   licenseUrl: "https://github.com/wiremoons/damt/",
-  crYear: "2022",
+  crYear: "2022-2023",
 };
 
 /** Define the command line argument switches and options to be used */
