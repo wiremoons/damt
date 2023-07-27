@@ -14,9 +14,9 @@
  * Application is written in TypeScript for use with the Deno runtime: https://deno.land/
  *
  * @note The program can be run with Deno using the command:
- * @code deno run --quiet --allow-read damt.ts
+ * @code deno run --quiet --allow-read --allow-env=ACRODB --allow-write
  * @note The program can be installed to 'DENO_INSTALL_ROOT' to using the command:
- * @code deno install -f --quiet --allow-read damt.ts
+ * @code deno install -f --quiet --allow-read --allow-env=ACRODB --allow-write damt.ts
  * @note The program can be compiled using the command:
  * @code deno compile --quiet --allow-read --allow-env=ACRODB --allow-write damt.ts
  */
