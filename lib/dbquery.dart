@@ -175,16 +175,16 @@ Linux distributions, are shown below:
 PLEASE NOTE:
 
 The SQLite shared library is needed to execute the application. Please install 
-the Dynamic Link Libray (DLL) file normally named 'sqlite3.dll' in the same location
+the Dynamic Link Library (DLL) file normally named 'sqlite3.dll' in the same location
 as this application. The Windows DLL can be freely obtained from:
 
        SQLite3 Downloads : https://www.sqlite.org/download.html
 
 page under the section: *Precompiled Binaries for Windows*. Example Steps to follow are:
       
-       curl -OL https://sqlite.org/2023/sqlite-dll-win32-x86-3430200.zip
-       unzip sqlite-dll-win32-x86-3430200.zip
-       copy the 'sqlite3.dll' to the same diretory as this application: 'damt.exe'
+       curl -OL https://sqlite.org/2023/sqlite-dll-win-x64-3440200.zip
+       unzip sqlite-dll-win-x64-3440200.zip
+       copy the 'sqlite3.dll' to the same directory as this application: 'damt.exe'
 
     """;
   }

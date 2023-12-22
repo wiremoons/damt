@@ -1,5 +1,12 @@
+## v0.4.4
+- Update SQLite download version help for Windows when SQLite3.dll is missing.
+- Fix various typo spelling errors across project files.
+
+## v0.4.3
+- Add instructions to the `README.md` to explain how to build a *SQLite* shared library for Linix.
+
 ## v0.4.2
-- Impove build script to check for error at each step, and add `dart fix -n` as new check.
+- Improve build script to check for error at each step, and add `dart fix -n` as new check.
 - Add instructions for SQLite library install for Debian and Ubuntu to the `README.md`.
 - Update Github CI build to use Dart version 3.1.2.
 - Updates to dependency versions in `pubspec.lock`.

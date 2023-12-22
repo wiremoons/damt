@@ -80,7 +80,7 @@ Future<String> fileSizeAsString(String filePath, int displayDecimals) async {
 /// Locate the full path to the specificed program
 ///
 /// Search the [PATH] environment for the stated program filename, appending *.exe*
-/// to the filename provided, if execting on a Windows system.
+/// to the filename provided, if executing on a Windows system.
 /// If found return the full path to the program as a [String].
 Future<String> findAppInPath(String appName) async {
   // check the environment [PATH] for 'appName' or 'appName.exe' file
@@ -113,7 +113,7 @@ Future<String> findAppInPath(String appName) async {
 Future<bool> exeFileExists(String dirPath, String appName) async {
   if ((dirPath.isEmpty) || (appName.isEmpty)) {
     stderr.writeln(
-        "\n  [!] ERROR: no path ['$dirPath'] or exectuable ['$appName'] found.");
+        "\n  [!] ERROR: no path ['$dirPath'] or executable ['$appName'] found.");
     return false;
   }
   // set correct 'AppName executable name as different on Windows as will hace '.exe' suffix
