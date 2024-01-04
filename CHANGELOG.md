@@ -1,3 +1,8 @@
+## v0.4.5
+- Upgrade dependencies: `intl 0.19.0` (was 0.18.1) and `lints 3.0.0` (was 2.1.1).
+- Update copyright year to include 2024.
+- Add `library;` to satisfy dart analyse error for: "dangling_library_doc_comments".
+
 ## v0.4.4
 - Update SQLite download version help for Windows when SQLite3.dll is missing.
 - Fix various typo spelling errors across project files.

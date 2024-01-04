@@ -3,6 +3,7 @@
 //
 // Disable some specific linting rules in this file only
 // ignore_for_file: unnecessary_brace_in_string_interps, unnecessary_string_interpolations
+library;
 
 import 'dart:io';
 import 'package:path/path.dart' as p;

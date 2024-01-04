@@ -4,6 +4,7 @@
 /// Misc supporting functions to perform system utility actions in support of
 /// the main application.
 ///
+library;
 
 // Disable some specific linting rules in this file only
 // ignore_for_file: unnecessary_brace_in_string_interps, unnecessary_string_interpolations

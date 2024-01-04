@@ -8,6 +8,7 @@
 /// forms of 'yes' or 'no' to suit the user preferred approach to
 /// answering.
 //
+library;
 
 import 'dart:io';
 
