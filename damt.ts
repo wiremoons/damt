@@ -295,7 +295,7 @@ DESCRIPTION: ${description}`);
   }
 }
 
-//** Show the last five new acronym records entered in the SQLite database
+//** Show the last five new acronym records entered into the SQLite database
 function dbLatestRecords(db: DB, dbData: DamtInterface) {
   const latestRecordsQuery = db.prepareQuery<
     [string, string, string, string, string, number]
@@ -353,7 +353,7 @@ function dbDataPopulate(db: DB, dbData: DamtInterface) {
 }
 
 // sqlite3_prepare_v2(amtdb->db,
-//     "select rowid,ifnull(Acronym,''), "
+// "select rowid,ifnull(Acronym,''), "
 // "ifnull(Definition,''), "
 // "ifnull(Source,''), "
 // "ifnull(Description,'') "
