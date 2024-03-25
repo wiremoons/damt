@@ -7,6 +7,7 @@
         "amtdb",
         "ifnull",
         "nocase",
-        "rowid"
+        "rowid",
+        "stdlib"
     ]
 }

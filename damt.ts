@@ -1,24 +1,24 @@
-#!/usr/bin/env -S deno run --quiet --allow-read --allow-env=ACRODB --allow-write
+#!/usr/bin/env -S deno run --quiet --allow-read --allow-env=ACRODB --allow-write --unstable-temporal
 /**
  * @file damt.ts
  * @brief Manage acronyms stored in a SQLite database.
  *
  * @author     simon rowe <simon@wiremoons.com>
- * @license    open-source released under "MIT Licence"
+ * @license    open-source released under "MIT License"
  * @source     https://github.com/wiremoons/damt
  *
- * @date originally created: 25 Feb 2022
+ * @date originally created: 25 Feb 2022.
  * @date updated significantly: November 2022.
  *
  * @details Program is used to manage acronyms stored in a SQLite database.
  * Application is written in TypeScript for use with the Deno runtime: https://deno.land/
  *
  * @note The program can be run with Deno using the command:
- * @code deno run --quiet --allow-read --allow-env=ACRODB --allow-write
+ * @code deno run --quiet --allow-read --allow-env=ACRODB --allow-write --unstable-temporal
  * @note The program can be installed to 'DENO_INSTALL_ROOT' to using the command:
- * @code deno install -f --quiet --allow-read --allow-env=ACRODB --allow-write damt.ts
+ * @code deno install -f --quiet --allow-read --allow-env=ACRODB --allow-write --unstable-temporal damt.ts
  * @note The program can be compiled using the command:
- * @code deno compile --quiet --allow-read --allow-env=ACRODB --allow-write damt.ts
+ * @code deno compile --quiet --allow-read --allow-env=ACRODB --allow-write --unstable-temporal damt.ts
  */
 
 //--------------------------------
@@ -26,31 +26,30 @@
 //--------------------------------
 
 // Deno stdlib imports
-import { toIMF } from "https://deno.land/std@0.166.0/datetime/mod.ts";
-import { parse } from "https://deno.land/std@0.166.0/flags/mod.ts";
-import { format } from "https://deno.land/std@0.166.0/fmt/bytes.ts";
+import { parseArgs } from "https://deno.land/std@0.220.1/cli/parse_args.ts";
+import { format } from "https://deno.land/std@0.220.1/fmt/bytes.ts";
 import {
   basename,
   dirname,
   fromFileUrl,
   join,
   normalize,
-} from "https://deno.land/std@0.166.0/path/mod.ts";
+} from "https://deno.land/std@0.220.1/path/mod.ts";
 import {
-  blue,
+  //blue,
   bold,
-  underline,
-} from "https://deno.land/std@0.166.0/fmt/colors.ts";
+  //underline,
+} from "https://deno.land/std@0.220.1/fmt/colors.ts";
 
 // Other imports
 import {
   cliVersion,
   existsFile,
   getFileModTime,
-  isNumber,
+  //isNumber,
   isString,
 } from "https://deno.land/x/deno_mod@0.8.1/mod.ts";
-import { DB } from "https://deno.land/x/sqlite@v3.7.2/mod.ts";
+import { DB } from "https://deno.land/x/sqlite@v3.8/mod.ts";
 
 //--------------------------------
 // GLOBAL DECLARATIONS
@@ -72,10 +71,10 @@ interface DamtInterface {
 
 /** define options for `cliVersion()` function for application version data */
 const versionOptions = {
-  version: "0.2.2",
+  version: "0.3.0",
   copyrightName: "Simon Rowe",
   licenseUrl: "https://github.com/wiremoons/damt/",
-  crYear: "2022-2023",
+  crYear: "2022-2024",
 };
 
 /** Define the command line argument switches and options to be used */
@@ -93,7 +92,7 @@ const cliOpts = {
 /** obtain any command line arguments and exec them as needed */
 async function execCliArgs(db: DB, dbData: DamtInterface) {
   //console.log(parse(Deno.args,cliOpts));
-  const cliArgs = parse(Deno.args, cliOpts);
+  const cliArgs = parseArgs(Deno.args, cliOpts);
 
   if (cliArgs.search) {
     dbSearch(Deno.args[1], db, dbData);
@@ -157,16 +156,27 @@ function isObject(arg: any): arg is DamtInterface {
 
 /** Convert epoch date to date and time for display in output as a string */
 function getDisplayDateTime(epochTime: number): string {
-  //console.log(`Epoch time for conversion to data and time: ${epochTime}`);
-  let dateUTC: Date;
-  //console.log(`Epoch number: ${epochTime} and kind is: ${typeof epochTime}`);
-  epochTime = (typeof epochTime === "string") ? parseInt(epochTime) : epochTime;
-  if (isNumber(epochTime)) {
-    dateUTC = new Date(epochTime * 1000);
-    //console.log(`Converted date to UTC format: ${dateUTC}`);
-    return toIMF(new Date(dateUTC));
-    //console.log(`Final data and time format: ${toIMF(new Date(dateUTC))}`);
-  } else {
+  // console.log(`Epoch time for conversion to data and time: ${epochTime}`);
+  // Set appearance of date and time when converted to a string for output.
+  // Example for '1710315965' === 'Wed, 13 March 2024 at 07:46:05'
+  // See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: "short",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour12: false,
+    // timeZoneName: 'short',
+    // timeZone: "UTC",
+  };
+  // See: https://tc39.es/proposal-temporal/docs/instant.html
+  try {
+    const instance: Temporal.Instant = Temporal.Instant.fromEpochSeconds(
+      epochTime,
+    );
+    return instance.toLocaleString(undefined, options);
+  } catch (e) {
+    console.error(`Failed to convert epoch date: ${e}`);
     return "UNKNOWN";
   }
 }
@@ -203,6 +213,7 @@ async function setDbData(): Promise<DamtInterface> {
     );
   }
 
+  // Use https://deno.land/std/fmt/ to show DB size in formatted bytes/MB/GB etc
   const prettyDBSze = await getFileSize(dbLocation).then((size) =>
     size ? format(size) : "UNKNOWN"
   );
@@ -289,7 +300,7 @@ DESCRIPTION: ${description}`);
       resultCount++;
     }
     console.log(
-      `\nSearch of '${dbData.dbRecordCount}' records for '${searchItem}' found '${resultCount}' matches.`,
+      `\nSearch of '${dbData.dbRecordCount}' records for '${searchItem}' found '${resultCount.toLocaleString()}' matches.`,
     );
     searchQuery.finalize();
   }
@@ -325,19 +336,19 @@ DESCRIPTION: ${description}`);
 
 //** Obtain the total number of acronym records in the database
 function recordCount(db: DB): string {
-  return (db)
+  return db
     ? (db.query("select count(*) from acronyms;")).toLocaleString()
     : "ERROR";
 }
 
 //** Obtain the SQLite version
 function sqliteVersion(db: DB): string {
-  return (db) ? (db.query("select sqlite_version();")).toString() : "ERROR";
+  return db ? (db.query("select sqlite_version();")).toString() : "ERROR";
 }
 
 //** Obtain the last acronym (ie newest) entered into the database
 function lastAcronym(db: DB): string {
-  return (db)
+  return db
     ? (db.query("select acronym from acronyms order by rowid desc limit 1;"))
       .toString()
     : "ERROR";
