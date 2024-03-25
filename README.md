@@ -17,8 +17,8 @@ file - just download a copy and add it to a directory in your path.
 Once _Deno_ is installed, the `damt.ts` source can be run directly with the
 command:
 
-```
-deno run --quiet --allow-read --allow-env=ACRODB --allow-write --unstable-temporal https://github.com:wiremoons/damt/damt.ts
+```console
+deno run --quiet --allow-read --allow-env=ACRODB --allow-write --unstable-temporal https://raw.githubusercontent.com/wiremoons/damt/main/damt.ts
 ```
 
 The program can be run with _Deno_ using a local copy the file `damt.ts` and the

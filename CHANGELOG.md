@@ -1,3 +1,7 @@
+## v0.3.1
+
+- Fix URL in `README.md` and `damt.ts` to allow `deno run` to work.
+
 ## v0.3.0
 
 - Exclude '.idea' WebStorm folder in '.gitignore'.

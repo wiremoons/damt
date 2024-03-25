@@ -14,7 +14,7 @@
  * Application is written in TypeScript for use with the Deno runtime: https://deno.land/
  *
  * @note The program can be run directly from the GitHub repo using the command:
- * @code deno run --quiet --allow-read --allow-env=ACRODB --allow-write --unstable-temporal https://github.com:wiremoons/damt/damt.ts
+ * @code deno run --quiet --allow-read --allow-env=ACRODB --allow-write --unstable-temporal https://raw.githubusercontent.com/wiremoons/damt/main/damt.ts
  * @note The program can be run with Deno using the command:
  * @code deno run --quiet --allow-read --allow-env=ACRODB --allow-write --unstable-temporal
  * @note The program can be installed to 'DENO_INSTALL_ROOT' to using the command:
