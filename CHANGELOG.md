@@ -15,6 +15,7 @@
 - Add `.toLocaleString()` for records found in search results for improved
   output format.
 - Add a `README.md` file for the repo hosted on Github.
+- Add initial Github Actions test run for application.
 
 ## v0.2.2
 
