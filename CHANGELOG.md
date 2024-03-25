@@ -14,6 +14,7 @@
 - Add new spelling exclusions to VSCode `settings.json` file.
 - Add `.toLocaleString()` for records found in search results for improved
   output format.
+- Add a `README.md` file for the repo hosted on Github.
 
 ## v0.2.2
 
