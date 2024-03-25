@@ -73,7 +73,7 @@ interface DamtInterface {
 
 /** define options for `cliVersion()` function for application version data */
 const versionOptions = {
-  version: "0.3.0",
+  version: "0.3.1",
   copyrightName: "Simon Rowe",
   licenseUrl: "https://github.com/wiremoons/damt/",
   crYear: "2022-2024",
