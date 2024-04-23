@@ -1,3 +1,13 @@
+# Change Log for `damt.ts`
+
+## v0.4.0
+
+- switch to use `jsr.io` for Deno stdlib.
+- removal of the database interface to simplify the code.
+- code refactoring as part of interface removal.
+- fix typo in program help for word 'SQlite'.
+- Update comments for functions and intro Deno `run` instruction list.
+
 ## v0.3.1
 
 - Fix URL in `README.md` and `damt.ts` to allow `deno run` to work.
