@@ -10,6 +10,7 @@
  * @date originally created: 25 Feb 2022.
  * @date updated significantly: November 2022.
  * @date significant refactoring: April 2024.
+ * @date updated to work with Deno 2.x: 02 Aug 2025.
  *
  * @details Program is used to manage acronyms stored in a SQLite database.
  * Application is written in TypeScript for use with the Deno runtime: https://deno.land/
@@ -24,21 +25,32 @@
  * @code deno compile --quiet --allow-read --allow-env=ACRODB --allow-write --unstable-temporal damt.ts
  */
 
+// Database columns:
+// Acronym|Changed|Definition|Description|Key|Source
+// SQLite queries to implement:
+//
+// Add a new acronym (NB: database TRIGGER add 'Changed' value. TODO: add UUID to 'key')
+// UUID Example: 0A5B3D84-F334-41C1-866B-69E9C654EA06
+// insert into ACRONYMS(Acronym,Definition,Source,Description) values(?,?,?,?);
+//
+// Delete an acronym record
+// delete from ACRONYMS where rowid = ?;
+//
+// Get a list of the record 'source' entires
+// select distinct(source) from acronyms;
+//
+// Update a record
+// update ACRONYMS set Acronym=%Q, Definition=%Q, Description=%Q, Source=%Q where rowid is ?;
+
 //--------------------------------
 // MODULE IMPORTS
 //--------------------------------
 
 // Deno stdlib imports
-import { parseArgs } from "jsr:@std/cli@0.223.0/parse-args";
-import { format } from "jsr:@std/fmt@0.223.0/bytes";
-import {
-  basename,
-  dirname,
-  fromFileUrl,
-  join,
-  normalize,
-} from "jsr:@std/path@0.223.0";
-import { bold } from "jsr:@std/fmt@0.223.0/colors";
+import { parseArgs } from "jsr:@std/cli/parse-args";
+import { format } from "jsr:@std/fmt/bytes";
+import { basename, dirname, fromFileUrl, join, normalize } from "jsr:@std/path";
+import { bold } from "jsr:@std/fmt/colors";
 
 // Other imports
 import {
@@ -46,7 +58,7 @@ import {
   existsFile,
   getFileModTime,
 } from "https://deno.land/x/deno_mod@0.8.1/mod.ts";
-import { DB } from "https://deno.land/x/sqlite@v3.8/mod.ts";
+import { DB } from "https://deno.land/x/sqlite@v3.9.1/mod.ts";
 
 //--------------------------------
 // GLOBAL DECLARATIONS
@@ -62,10 +74,10 @@ import { DB } from "https://deno.land/x/sqlite@v3.8/mod.ts";
  * @prop {string} crYear the year(s) the copyright applies to for this application
  */
 const versionOptions = {
-  version: "0.4.0",
+  version: "0.5.0",
   copyrightName: "Simon Rowe",
   licenseUrl: "https://github.com/wiremoons/damt/",
-  crYear: "2022-2024",
+  crYear: "2022-2025",
 };
 
 /** Define the command line argument switches and options to be used */
@@ -124,7 +136,7 @@ async function execCliArgs(db: DB) {
 // UTILITY FUNCTIONS
 //--------------------------------
 
-/** Return the name of the currently running program without the path included. */
+/** Return the name of the currently running program without the path. */
 function getAppName(): string {
   return `${basename(Deno.mainModule) ?? "UNKNOWN"}`;
 }
@@ -163,7 +175,9 @@ export function isString(arg: any): arg is string {
 
 /** Convert epoch date to date and time for display in output as a string */
 function getDisplayDateTime(epochTime: number): string {
+  // DEBUG OUTPUT:
   // console.log(`Epoch time for conversion to data and time: ${epochTime}`);
+  //
   // Set appearance of date and time when converted to a string for output.
   // Example for '1710315965' === 'Wed, 13 March 2024 at 07:46:05'
   // See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl
@@ -178,8 +192,8 @@ function getDisplayDateTime(epochTime: number): string {
   };
   // See: https://tc39.es/proposal-temporal/docs/instant.html
   try {
-    const instance: Temporal.Instant = Temporal.Instant.fromEpochSeconds(
-      epochTime,
+    const instance: Temporal.Instant = Temporal.Instant.fromEpochMilliseconds(
+      epochTime * 1000,
     );
     return instance.toLocaleString(undefined, options);
   } catch (e) {
