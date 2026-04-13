@@ -25,8 +25,8 @@ jobs:
       # Change below to use a different Dart SDK version:
       - uses: dart-lang/setup-dart@v1.3
         with:
-          sdk: 3.1.2
-      
+          sdk: 3.11.4
+
       - name: Install dependencies
         run: dart pub get
 
@@ -60,4 +60,3 @@ jobs:
           echo "INFO: Run the Dart application with no CLI flags"
           ./build/damt
           echo "DONE"
-          

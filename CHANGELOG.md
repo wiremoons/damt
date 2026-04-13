@@ -1,3 +1,7 @@
+## v0.5.0
+- Updates to `pubspec.lock` dependencies due to Dart SDK upgrade to `v3.11.4`.
+- Update all dependency packages to latest major versions.
+
 ## v0.4.5
 - Upgrade dependencies: `intl 0.19.0` (was 0.18.1) and `lints 3.0.0` (was 2.1.1).
 - Update copyright year to include 2024.

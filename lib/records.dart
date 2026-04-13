@@ -27,7 +27,7 @@ class Damt {
       : dbFullPath = "",
         dbFileName = "";
 
-  create() async {
+  Future<void> create() async {
     // check the [create()] method has not already be run
     if (dbFileName.isNotEmpty) {
       stdout.writeln("ERROR:  [!] 'Damt.create()' method already run.");

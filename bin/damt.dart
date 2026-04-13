@@ -18,8 +18,9 @@ import 'package:dav/dav.dart';
 import 'package:damt/records.dart';
 
 // set values to be used with package: dav and for help output
-const String applicationVersion = "0.4.5";
-const String copyright = "Copyright © 2023-2024 Simon Rowe <simon@wiremoons.com>";
+const String applicationVersion = "0.5.0";
+const String copyright =
+    "Copyright © 2023-2024 Simon Rowe <simon@wiremoons.com>";
 
 void main(List<String> arguments) async {
   var parser = ArgParser();

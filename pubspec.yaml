@@ -1,6 +1,6 @@
 name: damt  
 description: Command-line application to manage an SQLite database of acronyms.
-version: 0.4.5
+version: 0.5.0
 homepage: https://github.com/wiremoons/damt
 
 platforms:
@@ -15,10 +15,10 @@ dependencies:
   args: ^2.3.1
   dav: ^0.2.0
   http: ^1.0.0
-  intl: ^0.19.0
+  intl: ^0.20.2
   path: ^1.8.3
-  sqlite3: ^2.0.0
+  sqlite3: ^3.3.1
 
 dev_dependencies:
-  lints: ^3.0.0
+  lints: ^6.1.0
   test: ^1.16.0
